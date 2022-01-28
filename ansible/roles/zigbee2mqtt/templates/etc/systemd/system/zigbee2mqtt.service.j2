@@ -1,0 +1,23 @@
+{# Copyright (C) 2021 Patryk Ściborek <patryk@sciborek.com>
+ # Copyright (C) 2021 DebOps <https://debops.org/>
+ # SPDX-License-Identifier: GPL-3.0-only
+ #}
+# {{ ansible_managed }}
+
+[Unit]
+Description=Zigbee2MQTT
+After=network.target
+
+[Service]
+EnvironmentFile=-/etc/default/zigbee2mqtt
+ExecStart=/usr/bin/npm start
+WorkingDirectory={{ zigbee2mqtt__git_checkout }}
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User={{ zigbee2mqtt__user }}
+Group={{ zigbee2mqtt__group }}
+
+[Install]
+WantedBy=multi-user.target
+

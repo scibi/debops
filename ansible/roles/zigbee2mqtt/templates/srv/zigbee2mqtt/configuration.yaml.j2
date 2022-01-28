@@ -1,0 +1,7 @@
+{# Copyright (C) 2021 Patryk Ściborek <patryk@sciborek.com>
+ # Copyright (C) 2021 DebOps <https://debops.org/>
+ # SPDX-License-Identifier: GPL-3.0-or-later
+ # 
+ # This file will be overwriten by Zigbee2MQTT
+ #}
+{{ zigbee2mqtt__fact_dynamic_config | combine(zigbee2mqtt__fact_static_config) | to_nice_yaml(indent=2) }}

@@ -1,0 +1,211 @@
+---
+# Copyright (C) 2021 Patryk Ściborek <patryk@sciborek.com>
+# Copyright (C) 2021 DebOps <https://debops.org/>
+# SPDX-License-Identifier: GPL-3.0-only
+
+#- name: Import custom Ansible plugins
+#  import_role:
+#    name: 'ansible_plugins'
+#
+#- name: Import DebOps global handlers
+#  import_role:
+#    name: 'global_handlers'
+
+- name: Import DebOps secret role
+  import_role:
+    name: 'secret'
+    
+#- name: Install required packages
+#  package:
+#    name: '{{ q("flattened", (zigbee2mqtt__base_packages
+#                              + zigbee2mqtt__packages)) }}'
+#    state: 'present'
+#  register: zigbee2mqtt__register_packages
+#  until: zigbee2mqtt__register_packages is succeeded
+
+- name: Create Zigbee2MQTT system group
+  group:
+    name: '{{ zigbee2mqtt__group }}'
+    state: 'present'
+    system: True
+
+- name: Create Zigbee2MQTT system user
+  user:
+    name: '{{ zigbee2mqtt__user }}'
+    group: '{{ zigbee2mqtt__group }}'
+    groups: '{{ zigbee2mqtt__groups | join(",") | default(omit) }}'
+    home: '{{ zigbee2mqtt__home }}'
+    comment: '{{ zigbee2mqtt__gecos }}'
+    shell: '{{ zigbee2mqtt__shell }}'
+    state: 'present'
+    system: True
+
+- name: Create additional directories used by Zigbee2MQTT
+  file:
+    path: '{{ item }}'
+    state: 'directory'
+    owner: '{{ zigbee2mqtt__user }}'
+    group: '{{ zigbee2mqtt__group }}'
+    mode: '0755'
+  with_items:
+    - '/etc/zigbee2mqtt'
+    - '{{ zigbee2mqtt__src }}'
+#    - '{{ zigbee2mqtt__lib }}'
+    - '{{ zigbee2mqtt__data }}'
+#    - '{{ zigbee2mqtt__config_media_root }}'
+#    - '{{ zigbee2mqtt__config_reports_root }}'
+#    - '{{ zigbee2mqtt__config_scripts_root }}'
+
+- name: Configure zigbee2mqtt environment
+  template:
+    src: 'etc/default/zigbee2mqtt.j2'
+    dest: '/etc/default/zigbee2mqtt'
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  notify:
+    - 'Restart zigbee2mqtt'
+
+- name: Install custom zigbee2mqtt.service unit
+  template:
+    src: 'etc/systemd/system/zigbee2mqtt.service.j2'
+    dest: '/etc/systemd/system/zigbee2mqtt.service'
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  notify:
+    - 'Reload systemd daemon (zigbee2mqtt)'
+    - 'Restart zigbee2mqtt'
+
+- name: Generate main Zigbee2MQTT configuration
+  template:
+    src: 'etc/zigbee2mqtt/configuration.yaml.j2'
+    dest: '/etc/zigbee2mqtt/configuration.yaml'
+    owner: 'root'
+    group: '{{ zigbee2mqtt__group }}'
+    mode: '0640'
+#  no_log: '{{ debops__no_log | d(True) }}'
+
+- name: Make a backup of Zigbee2MQTT configuration
+  copy:
+    src: '{{ zigbee2mqtt__data }}/configuration.yaml'
+    dest: '{{ zigbee2mqtt__data }}/configuration.yaml.backup'
+    remote_src: True
+
+- name: Read dynamic config
+  slurp:
+    src: '{{ zigbee2mqtt__data }}/configuration.yaml'
+  register: zigbee2mqtt__register_dynamic_config
+
+- name: Read static config
+  slurp:
+    src: '/etc/zigbee2mqtt/configuration.yaml'
+  register: zigbee2mqtt__register_static_config
+
+- name: Set facts about Zigbee2MQTT configuration
+  set_fact:
+    zigbee2mqtt__fact_dynamic_config:  "{{ zigbee2mqtt__register_dynamic_config['content'] | b64decode | from_yaml}}"
+    zigbee2mqtt__fact_static_config: "{{ zigbee2mqtt__register_static_config['content'] | b64decode | from_yaml}}"
+
+- name: Save merged Zigbee2MQTT configuration
+  template:
+    src: 'srv/zigbee2mqtt/configuration.yaml.j2'
+    dest: '{{ zigbee2mqtt__data }}/configuration.yaml'
+    owner: '{{ zigbee2mqtt__user }}'
+    group: '{{ zigbee2mqtt__group }}'
+    mode: '0640'
+  register: tmp_templ
+  notify:
+    - 'Restart zigbee2mqtt'
+
+- name: Save static secrets
+  template:
+    src: 'srv/zigbee2mqtt/static_secrets.yaml.j2'
+    dest: '{{ zigbee2mqtt__data }}/static_secrets.yaml'
+    owner: '{{ zigbee2mqtt__user }}'
+    group: '{{ zigbee2mqtt__group }}'
+    mode: '0640'
+  notify:
+    - 'Restart zigbee2mqtt'
+
+- name: Clone Zigbee2MQTT source code
+  git:
+    repo: '{{ zigbee2mqtt__git_repo }}'
+    dest: '{{ zigbee2mqtt__git_dest }}'
+    version: '{{ zigbee2mqtt__git_version }}'
+    bare: True
+    update: True
+  become: True
+  become_user: '{{ zigbee2mqtt__user }}'
+  register: zigbee2mqtt__register_source
+  until: zigbee2mqtt__register_source is succeeded
+
+- name: Check if Zigbee2MQTT is installed
+  stat:
+    path: '{{ zigbee2mqtt__git_checkout }}'
+  register: zigbee2mqtt__register_installed
+
+- name: Create Zigbee2MQTT checkout directory
+  file:
+    path: '{{ zigbee2mqtt__git_checkout }}'
+    state: 'directory'
+    owner: '{{ zigbee2mqtt__user }}'
+    group: '{{ zigbee2mqtt__group }}'
+    mode: '0755'
+
+- name: Prepare Zigbee2MQTT git worktree
+  copy:
+    content: 'gitdir: {{ zigbee2mqtt__git_dest }}'
+    dest: '{{ zigbee2mqtt__git_checkout + "/.git" }}'
+    owner: '{{ zigbee2mqtt__user }}'
+    group: '{{ zigbee2mqtt__group }}'
+    mode: '0644'
+
+- name: Get commit hash of target checkout
+  environment:
+    GIT_WORK_TREE: '{{ zigbee2mqtt__git_checkout }}'
+  command: git rev-parse {{ zigbee2mqtt__git_version }}
+  args:
+    chdir: '{{ zigbee2mqtt__git_dest }}'
+    warn: False
+  become: True
+  become_user: '{{ zigbee2mqtt__user }}'
+  register: zigbee2mqtt__register_target_branch
+  changed_when: zigbee2mqtt__register_target_branch.stdout != zigbee2mqtt__register_source.before
+
+- name: debug zigbee2mqtt__register_target_branch
+  debug:
+    msg: '{{ zigbee2mqtt__register_target_branch }}'
+- name: debug zigbee2mqtt__register_source
+  debug:
+    msg: '{{ zigbee2mqtt__register_source }}'
+
+- name: Checkout Zigbee2MQTT
+  environment:  # noqa no-handler
+    GIT_WORK_TREE: '{{ zigbee2mqtt__git_checkout }}'
+  command: git checkout -f {{ zigbee2mqtt__git_version }}
+  args:
+    chdir: '{{ zigbee2mqtt__git_dest }}'
+    warn: False
+  become: True
+  become_user: '{{ zigbee2mqtt__user }}'
+  register: zigbee2mqtt__register_checkout
+  until: zigbee2mqtt__register_checkout is succeeded
+#  notify: [ 'Restart gunicorn for zigbee2mqtt', 'Restart zigbee2mqtt internal appserver', 'Restart zigbee2mqtt Request Queue Worker' ]
+  when: (zigbee2mqtt__register_source.before is undefined or
+         (zigbee2mqtt__register_source.before|d() and zigbee2mqtt__register_target_branch.stdout|d() and
+          zigbee2mqtt__register_source.before != zigbee2mqtt__register_target_branch.stdout) or
+          not zigbee2mqtt__register_installed.stat.exists|bool)
+  notify:
+    - 'Restart zigbee2mqtt'
+          
+- name: Install node packages
+  npm:
+    path: '{{ zigbee2mqtt__git_checkout }}'
+    ci: True
+  become: True
+  become_user: '{{ zigbee2mqtt__user }}'
+  register: zigbee2mqtt__register_checkout_npm_ci
+  when: zigbee2mqtt__register_checkout is changed
+  notify:
+    - 'Restart zigbee2mqtt'

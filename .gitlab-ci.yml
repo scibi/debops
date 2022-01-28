@@ -2645,3 +2645,19 @@ stages:
     JANE_INVENTORY_GROUPS: 'debops_service_zabbix_agent'
     JANE_DIFF_PATTERN: '.*/roles/zabbix_agent/.*'
     JANE_LOG_PATTERN: '\[zabbix_agent\]'
+
+'zigbee2mqtt role':
+  <<: *test_role_2nd_deps
+  needs:
+    - 'apt_preferences role'
+    - 'nodejs role'
+    - 'ferm role'
+    - 'python role'
+    - 'nginx role'
+  variables:
+    JANE_TEST_FACT: 'zigbee2mqtt.fact'
+    JANE_TEST_PLAY: '${DEBOPS_PLAYBOOKS}/service/zigbee2mqtt.yml'
+    JANE_INVENTORY_GROUPS: 'debops_service_zigbee2mqtt'
+    JANE_DIFF_PATTERN: '.*/roles/zigbee2mqtt/.*'
+    JANE_LOG_PATTERN: '\[zigbee2mqtt\]'
+

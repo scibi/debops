@@ -1,0 +1,318 @@
+---
+# .. vim: foldmarker=[[[,]]]:foldmethod=marker
+
+# .. Copyright (C) 2021 Patryk Ściborek <patryk@sciborek.com>
+# .. Copyright (C) 2021 DebOps <https://debops.org/>
+# .. SPDX-License-Identifier: GPL-3.0-only
+
+# .. _zigbee2mqtt__ref_defaults:
+
+# debops.zigbee2mqtt default variables
+# =================================
+
+# .. contents:: Sections
+#    :local:
+#
+# .. include:: ../../../../includes/global.rst
+
+
+# APT packages, version [[[
+# -------------------------
+
+# The ``debops.zigbee2mqtt`` role uses the :ref:`debops.elastic_co` Ansible role
+# to configure the Elastic APT repositories and install the packages. The role
+# also installs the Ansible facts that provide the ``zigbee2mqtt``
+# version.
+
+# .. envvar:: zigbee2mqtt__base_packages [[[
+#
+# List of base APT packages to install.
+zigbee2mqtt__base_packages: [ 'zigbee2mqtt' ]
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__packages [[[
+#
+# List of additional APT packages to install with Zigbee2MQTT.
+zigbee2mqtt__packages: []
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__version [[[
+#
+# Store the detected Zigbee2MQTT version in a convenient variable for conditional
+# configuration.
+zigbee2mqtt__version: '{{ ansible_local.zigbee2mqtt.version | d("0.0.0") }}'
+                                                                   # ]]]
+                                                                   # ]]]
+# Application user, group, home [[[
+# ---------------------------------
+
+# .. envvar:: zigbee2mqtt__user [[[
+#
+# Name of the UNIX system account used to manage Zigbee2MQTT.
+zigbee2mqtt__user: 'zigbee2mqtt'
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__group [[[
+#
+# Name of the UNIX primary group used to manage Zigbee2MQTT.
+zigbee2mqtt__group: 'zigbee2mqtt'
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__groups [[[
+#
+# List of additional system groups of the system UNIX account.
+# The ``dialout`` group grants accesses to :file:`/dev/ttyUSB*` devices
+# used by most ZigBee dongles.
+zigbee2mqtt__groups: [ 'dialout' ]
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__gecos [[[
+#
+# Contents of the GECOS field set for the Zigbee2MQTT account.
+zigbee2mqtt__gecos: 'Zigbee2MQTT'
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__shell [[[
+#
+# The default shell set on the Zigbee2MQTT account.
+zigbee2mqtt__shell: '/usr/sbin/nologin'
+                                                                   # ]]]
+                                                                   # ]]]
+# Directory paths [[[
+# -------------------
+
+# .. envvar:: zigbee2mqtt__home [[[
+#
+# The Zigbee2MQTT account home directory.
+zigbee2mqtt__home: '{{ (ansible_local.fhs.home | d("/var/local"))
+                  + "/" + zigbee2mqtt__user }}'
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__src [[[
+#
+# Directory where the role stores Zigbee2MQTT sources from GitHub.
+zigbee2mqtt__src: '{{ (ansible_local.fhs.src | d("/usr/local/src"))
+                 + "/" + zigbee2mqtt__user }}'
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__lib [[[
+#
+# Directory where the Zigbee2MQTT application directory is located.
+zigbee2mqtt__lib: '{{ (ansible_local.fhs.lib | d("/usr/local/lib"))
+                 + "/" + zigbee2mqtt__user }}'
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__data [[[
+#
+# Directory where custom Zigbee2MQTT data (images, scripts) outside of the database
+# is stored.
+zigbee2mqtt__data: '{{ (ansible_local.fhs.data | d("/srv"))
+                  + "/" + zigbee2mqtt__user }}'
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__bin [[[
+#
+# Directory where helper scripts for Zigbee2MQTT power users are stored.
+zigbee2mqtt__bin: '{{ ansible_local.fhs.bin | d("/usr/local/bin") }}'
+                                                                   # ]]]
+                                                                   # ]]]
+# Application sources and deployment [[[
+# --------------------------------------
+
+# .. envvar:: zigbee2mqtt__git_gpg_key_id [[[
+#
+# The GPG ID of the key used for signing Zigbee2MQTT releases. At the moment the
+# releases are signed using GitHub GPG key.
+zigbee2mqtt__git_gpg_key_id: '5DE3 E050 9C47 EA3C F04A  42D3 4AEE 18F8 3AFD EB23'
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__git_repo [[[
+#
+# The URI of the Zigbee2MQTT :command:`git` source repository.
+zigbee2mqtt__git_repo: 'https://github.com/Koenkk/zigbee2mqtt.git'
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__git_version [[[
+#
+# The :command:`git` branch or tag which will be installed.
+zigbee2mqtt__git_version: '1.22.0'
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__git_dest [[[
+#
+# Path where the :command:`git` source bare repository will be stored.
+zigbee2mqtt__git_dest: '{{ zigbee2mqtt__src + "/" + zigbee2mqtt__git_repo.split("://")[1] }}'
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__git_checkout [[[
+#
+# Path where Zigbee2MQTT sources will be checked out (installation path).
+zigbee2mqtt__git_checkout: '{{ zigbee2mqtt__lib + "/app" }}'
+                                                                   # ]]]
+                                                                   # ]]]
+# MQTT broker configuration [[[
+# ---------------------------------
+
+# .. envvar:: zigbee2mqtt__mqtt_base_topic [[[
+#
+# MQTT base topic for zigbee2mqtt MQTT messages.
+zigbee2mqtt__mqtt_base_topic: 'zigbee2mqtt'
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__mqtt_server_url [[[
+#
+# MQTT server URL.
+zigbee2mqtt__mqtt_server_url: 'mqtts://mqtt.{{ ansible_domain }}'
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__mqtt_server_user [[[ 
+#
+# Name of the MQTT server user.
+zigbee2mqtt__mqtt_server_user: 'zigbee2mqtt'
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__mqtt_server_password [[[
+#
+# MQTT server password to Zigbee2MQTT account.
+zigbee2mqtt__mqtt_server_password: '{{ lookup("password", secret + "/mosquitto/passwd/" + zigbee2mqtt__mqtt_server_user) }}'
+
+                                                                   # ]]]
+                                                                   # ]]]
+# WebUI configuration [[[
+# ---------------------------------
+
+# .. envvar:: zigbee2mqtt__frontend_enabled [[[
+#
+# Wheter webbased frontend should be enabled
+zigbee2mqtt__frontend_enabled: False
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__frontend_port [[[
+#
+# Port frontend should listen on.
+zigbee2mqtt__frontend_port: 8080
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__frontend_host [[[
+#
+# Address frontend should bind to.
+zigbee2mqtt__frontend_host: '127.0.0.1'
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__frontend_fqdn [[[
+#
+# Frontend FQDN
+zigbee2mqtt__frontend_fqdn: '{{ ansible_fqdn }}'
+
+                                                                   # ]]]
+                                                                   # ]]]
+# Main Zigbee2MQTT configuration file [[[
+# ------------------------------------
+
+# The variables below define the contents of the
+# :file:`/etc/zigbee2mqtt/configuration.yaml` configuration file.
+# See :ref:`zigbee2mqtt__ref_configuration` for more details.
+
+# .. envvar:: zigbee2mqtt__default_configuration [[[
+#
+# The Zigbee2MQTT configuration defined by the role.
+zigbee2mqtt__default_configuration:
+
+  - name: 'mqtt'
+    config:
+      # MQTT settings
+      mqtt:
+        # MQTT base topic for zigbee2mqtt MQTT messages
+        base_topic: zigbee2mqtt
+        # MQTT server URL
+        server: '{{ zigbee2mqtt__mqtt_server_url }}'
+        # MQTT server authentication, uncomment if required:
+        user: '!static_secrets mqtt_user'
+        password: '!static_secrets mqtt_password'
+
+  - name: 'frontend'
+    state: '{% if zigbee2mqtt__frontend_enabled | bool %}present{% else %}absent{% endif %}'
+    config:
+      frontend:
+        # Optional, default 8080
+        port: '{{ zigbee2mqtt__frontend_port }}'
+        # Optional, default 0.0.0.0
+        host: '{{ zigbee2mqtt__frontend_host }}'
+        # Optional, enables authentication, disabled by default
+        # auth_token: your-secret-token
+        # Optional, url on which the frontend can be reached, currently only used for the Home Assistant device configuration page
+        url: 'https://{{ zigbee2mqtt__frontend_fqdn }}'
+
+  - name: 'serial'
+    config:
+      # Serial settings
+      serial:
+        # Location of CC2531 USB sniffer
+        port: /dev/serial/by-id/usb-Silicon_Labs_slae.sh_cc2652rb_stick_-_slaesh_s_iot_stuff_00_12_4B_00_21_4F_23_6B-if00-port0
+
+  - name: 'devices_and_groups'
+    config:
+      # Define the files which contains the configs
+      devices: devices.yaml
+      groups: groups.yaml
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__configuration [[[
+#
+# The Zigbee2MQTT configuration which should be present on all hosts in the
+# Ansible inventory.
+zigbee2mqtt__configuration: []
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__group_configuration [[[
+#
+# The Zigbee2MQTT configuration which should be present on hosts in a specific
+# Ansible inventory group.
+zigbee2mqtt__group_configuration: []
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__host_configuration [[[
+#
+# The Zigbee2MQTT configuration which should be present on specific hosts in the
+# Ansible inventory.
+zigbee2mqtt__host_configuration: []
+
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__combined_configuration [[[
+#
+# Variable which combines all Zigbee2MQTT configuration variables and is used in
+# the role tasks and templates.
+zigbee2mqtt__combined_configuration: '{{ zigbee2mqtt__default_configuration
+                                      + zigbee2mqtt__configuration
+                                      + zigbee2mqtt__group_configuration
+                                      + zigbee2mqtt__host_configuration }}'
+                                                                   # ]]]
+                                                                   # ]]]
+# Configuration for other Ansible roles [[[
+# -----------------------------------------
+
+# .. envvar:: zigbee2mqtt__nginx__dependent_upstreams [[[
+#
+# Upstream configuration for the :ref:`debops.nginx` Ansible role.
+zigbee2mqtt__nginx__dependent_upstreams:
+  - name: 'zigbee2mqtt'
+    server: '127.0.0.1:{{ zigbee2mqtt__frontend_port }}'
+                                                                   # ]]]
+# .. envvar:: zigbee2mqtt__nginx__dependent_servers [[[
+#
+# Server configuration for the :ref:`debops.nginx` Ansible role.
+zigbee2mqtt__nginx__dependent_servers:
+  - name: '{{ zigbee2mqtt__frontend_fqdn }}'
+    by_role: 'debops.zigbee2mqtt'
+    filename: 'debops.zigbee2mqtt'
+    location_list:
+      - pattern: '/'
+        options: |
+           proxy_redirect off;
+           proxy_http_version 1.1;
+           proxy_set_header Host $http_host;
+           proxy_set_header X-Real-IP         $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+           proxy_set_header X-Forwarded-Port  443;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_cache_bypass $http_upgrade;
+           proxy_pass http://zigbee2mqtt;
+                                                                   # ]]]
+                                                                   # ]]]
