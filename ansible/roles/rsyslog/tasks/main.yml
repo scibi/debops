@@ -63,6 +63,29 @@
   when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
         rsyslog__unprivileged | bool and rsyslog__user != 'root'
 
+- name: DEBUG - get full passwd entry for rsyslog user
+  ansible.builtin.command: getent passwd {{ rsyslog__user }}
+  register: rsyslog__debug_passwd
+  changed_when: False
+  failed_when: False
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root'
+
+- name: DEBUG - show full passwd entry (home, shell)
+  ansible.builtin.debug:
+    msg: '{{ rsyslog__debug_passwd.stdout | d("(user does not exist yet)") }}'
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root'
+
+- name: DEBUG - show what role would set (home, shell)
+  ansible.builtin.debug:
+    msg:
+      role_home: '{{ rsyslog__home }}'
+      role_shell: '/bin/false'
+      current_from_getent: '{{ rsyslog__debug_passwd.stdout | d("N/A") }}'
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root'
+
 - name: DEBUG - check ssl-cert group existence and members
   ansible.builtin.command: getent group ssl-cert
   register: rsyslog__debug_sslcert_group
