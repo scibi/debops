@@ -49,6 +49,91 @@
   when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
         rsyslog__unprivileged | bool and rsyslog__group != 'root'
 
+- name: DEBUG - collect rsyslog user info before modification
+  ansible.builtin.command: id {{ rsyslog__user }}
+  register: rsyslog__debug_id
+  changed_when: False
+  failed_when: False
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root'
+
+- name: DEBUG - show rsyslog user id output
+  ansible.builtin.debug:
+    msg: '{{ rsyslog__debug_id.stdout | d("(user does not exist yet)") }}'
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root'
+
+- name: DEBUG - check ssl-cert group existence and members
+  ansible.builtin.command: getent group ssl-cert
+  register: rsyslog__debug_sslcert_group
+  changed_when: False
+  failed_when: False
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root'
+
+- name: DEBUG - show ssl-cert group info
+  ansible.builtin.debug:
+    msg: '{{ rsyslog__debug_sslcert_group.stdout | d("(ssl-cert group does not exist)") }}'
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root'
+
+- name: DEBUG - list processes running as rsyslog user
+  ansible.builtin.shell: ps -eo pid,user,comm --no-headers | grep "^[[:space:]]*[0-9]\+[[:space:]]\+{{ rsyslog__user }}[[:space:]]" || echo "(no processes)"
+  register: rsyslog__debug_procs
+  changed_when: False
+  failed_when: False
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root'
+
+- name: DEBUG - show processes running as rsyslog user
+  ansible.builtin.debug:
+    msg: '{{ rsyslog__debug_procs.stdout_lines | d([]) }}'
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root'
+
+- name: DEBUG - check rsyslog service status
+  ansible.builtin.command: systemctl status rsyslog --no-pager -l
+  register: rsyslog__debug_service
+  changed_when: False
+  failed_when: False
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root' and
+        ansible_service_mgr == 'systemd'
+
+- name: DEBUG - show rsyslog service status
+  ansible.builtin.debug:
+    msg: '{{ rsyslog__debug_service.stdout_lines | d([]) }}'
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root' and
+        ansible_service_mgr == 'systemd'
+
+- name: DEBUG - list all processes running as rsyslog user via pgrep
+  ansible.builtin.shell: pgrep -u {{ rsyslog__user }} -a 2>/dev/null || echo "(no processes running as {{ rsyslog__user }})"
+  register: rsyslog__debug_pgrep
+  changed_when: False
+  failed_when: False
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root'
+
+- name: DEBUG - show pgrep output for rsyslog user
+  ansible.builtin.debug:
+    msg: '{{ rsyslog__debug_pgrep.stdout_lines | d([]) }}'
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root'
+
+- name: DEBUG - collect rsyslog_append_groups and pki variables
+  ansible.builtin.debug:
+    msg:
+      rsyslog__unprivileged: '{{ rsyslog__unprivileged }}'
+      rsyslog__pki: '{{ rsyslog__pki }}'
+      rsyslog__append_groups: '{{ rsyslog__append_groups }}'
+      rsyslog__user: '{{ rsyslog__user }}'
+      rsyslog__group: '{{ rsyslog__group }}'
+      ansible_distribution: '{{ ansible_distribution }}'
+      ansible_distribution_version: '{{ ansible_distribution_version }}'
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root'
+
 - name: Create required system user
   ansible.builtin.user:
     name: '{{ rsyslog__user }}'
@@ -60,6 +145,27 @@
     state: 'present'
     createhome: False
     system: True
+  register: rsyslog__register_user
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root'
+
+- name: DEBUG - show result of user modification task
+  ansible.builtin.debug:
+    var: rsyslog__register_user
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root'
+
+- name: DEBUG - verify final user groups after modification
+  ansible.builtin.command: id {{ rsyslog__user }}
+  register: rsyslog__debug_id_after
+  changed_when: False
+  failed_when: False
+  when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
+        rsyslog__unprivileged | bool and rsyslog__user != 'root'
+
+- name: DEBUG - show final user groups after modification
+  ansible.builtin.debug:
+    msg: '{{ rsyslog__debug_id_after.stdout | d("(error: " + rsyslog__debug_id_after.stderr | d("unknown") + ")") }}'
   when: rsyslog__enabled | bool and rsyslog__deploy_state != 'absent' and
         rsyslog__unprivileged | bool and rsyslog__user != 'root'
 
