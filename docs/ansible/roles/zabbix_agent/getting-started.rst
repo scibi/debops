@@ -78,8 +78,8 @@ encrypts its connections to the Zabbix Server or Proxy:
 ``unencrypted``
   Plain-text connections, no TLS.
 
-When using ``cert`` mode, configure ``zabbix_server__tls_mode`` to
-``cert`` as well on the ``debops.zabbix_server`` side so that the server
+When using ``cert`` mode, configure :envvar:`zabbix_server__tls_mode` to
+``cert`` as well on the :ref:`debops.zabbix_server` side so that the server
 can verify agent certificates, and register the host's certificate
 subject/issuer via :envvar:`zabbix_agent__api_tls_subject` and
 :envvar:`zabbix_agent__api_tls_issuer` if self-registration is used (see
@@ -117,11 +117,11 @@ additional UserParameters based on the container's own cgroup instead:
   utilization on containers with active disk I/O (e.g. a database using
   network-backed storage).
 
-The "LXC container" Zabbix template shipped with the ``debops.zabbix_server``
+The "LXC container" Zabbix template shipped with the :ref:`debops.zabbix_server`
 role defines matching items, triggers and a "LXC performance" dashboard for
 these UserParameters, and the server role disables the misleading host-wide
 CPU/load items on any host linked to it (see
-``zabbix_server__host_item_overrides``).
+:envvar:`zabbix_server__host_item_overrides`).
 
 
 API self-registration
@@ -139,9 +139,9 @@ agent is actually configured for ``cert``, and connections would fail.
 This requires network access from :envvar:`zabbix_agent__api_delegate_to`
 (``localhost``, the Ansible Controller, by default) to the Zabbix API, and
 an existing API token - normally the one bootstrapped automatically by the
-``debops.zabbix_server`` role and stored in the DebOps ``secret/``
+:ref:`debops.zabbix_server` role and stored in the DebOps ``secret/``
 directory at the path configured by :envvar:`zabbix_agent__api_token_path`
-(same default path as ``zabbix_server__api_token_path``, so no extra
+(same default path as :envvar:`zabbix_server__api_token_path`, so no extra
 configuration is needed when both roles are used together in the same
 project).
 

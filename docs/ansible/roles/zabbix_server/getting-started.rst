@@ -121,7 +121,7 @@ The role imports a custom "LXC container" template
 cgroup accounting rather than host-wide ``/proc`` values that are
 misleading inside an LXC container (see the
 :ref:`debops.zabbix_agent` role documentation for the corresponding
-``zabbix_agent__cgroup_metrics`` UserParameters). The role also
+:envvar:`zabbix_agent__cgroup_metrics` UserParameters). The role also
 disables the host-wide ``system.cpu.load*``/``system.cpu.util*`` items on
 any host linked to this template, via
 :envvar:`zabbix_server__host_item_overrides`, since they would otherwise

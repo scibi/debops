@@ -700,7 +700,7 @@ zabbix_server__api_admin_password: '{{ lookup("password", secret + "/" +
 # Relative path, within the DebOps ``secret/`` directory, to the file which
 # holds the Zabbix API token bootstrapped by this role. The same path is
 # used by default by the :ref:`debops.zabbix_agent` role for API
-# self-registration (``zabbix_agent__api_token_path``).
+# self-registration (:envvar:`zabbix_agent__api_token_path`).
 zabbix_server__api_token_path: 'zabbix/api_token'
 
                                                                    # ]]]
@@ -773,7 +773,7 @@ zabbix_server__users: []
 # template export file in JSON format (usually via a Jinja
 # ``lookup('file', ...)`` expression). By default imports the "LXC
 # container" template shipped with this role, used together with
-# ``zabbix_agent__cgroup_metrics`` on the :ref:`debops.zabbix_agent`
+# :envvar:`zabbix_agent__cgroup_metrics` on the :ref:`debops.zabbix_agent`
 # side.
 zabbix_server__templates:
 

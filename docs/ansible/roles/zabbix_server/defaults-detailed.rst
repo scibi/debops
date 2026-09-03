@@ -125,7 +125,7 @@ should define:
 
 By default the role imports the "LXC container" template shipped in
 :file:`files/templates/zabbix_template_lxc_container.json`, used together
-with ``zabbix_agent__cgroup_metrics`` on the :ref:`debops.zabbix_agent`
+with :envvar:`zabbix_agent__cgroup_metrics` on the :ref:`debops.zabbix_agent`
 side. Add your own custom templates by extending this list at the
 inventory level.
 
