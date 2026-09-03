@@ -46,6 +46,13 @@ New DebOps roles
   exporters and Debian releases. Exporters bind to loopback and are meant to
   be scraped by :ref:`debops.vmagent`.
 
+- The :ref:`debops.zabbix_server` role installs and configures Zabbix
+  Server, its PostgreSQL database schema and PHP web frontend, and manages
+  global Zabbix objects (media types, actions, users, custom templates) via
+  the JSON-RPC API. It is designed to bootstrap a complete installation
+  from an empty database without any manual steps through the web
+  interface, and complements the :ref:`debops.zabbix_agent` role.
+
 General
 '''''''
 
