@@ -39,6 +39,13 @@ New DebOps roles
   with SHA256-verified binary installs from upstream release archives and
   DebOps secret integration for remote-write bearer tokens.
 
+- The :ref:`debops.prometheus_exporter` role can install and configure
+  Prometheus exporters from Debian packages (the ``prometheus-*-exporter``
+  family). Each exporter is managed via a systemd drop-in that rewrites
+  ``ExecStart``/``Environment``, so the role works uniformly across
+  exporters and Debian releases. Exporters bind to loopback and are meant to
+  be scraped by :ref:`debops.vmagent`.
+
 General
 '''''''
 
