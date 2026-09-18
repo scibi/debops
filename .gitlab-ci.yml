@@ -848,6 +848,21 @@ stages:
 
 # --- g --- [[[2
 
+'garage role':
+  <<: *test_role_2nd_deps
+  needs:
+    - 'secret role'
+    - 'etc_services role'
+    - 'ferm role'
+    - 'python role'
+    - 'nginx role'
+  variables:
+    JANE_TEST_FACT: 'garage.fact'
+    JANE_TEST_PLAY: '${DEBOPS_PLAYBOOKS}/service/garage.yml'
+    JANE_INVENTORY_GROUPS: 'debops_service_garage'
+    JANE_DIFF_PATTERN: '.*/roles/garage/.*'
+    JANE_LOG_PATTERN: '\[garage\]'
+
 'gitlab role':
   <<: *test_role_3rd_deps
   needs:

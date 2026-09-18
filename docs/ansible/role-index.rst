@@ -95,6 +95,7 @@ are not accessed directly by end users.
 - :ref:`debops.fcgiwrap`
 - :ref:`debops.freeradius`
 - :ref:`debops.gunicorn`
+- :ref:`debops.garage`
 - :ref:`debops.keepalived`
 - :ref:`debops.imapproxy`
 - :ref:`debops.ldap`
@@ -181,6 +182,7 @@ Ansible roles that manage filesystem-level services, or export filesystems to
 other hosts.
 
 - :ref:`debops.fhs`
+- :ref:`debops.garage`
 - :ref:`debops.iscsi`
 - :ref:`debops.lvm`
 - :ref:`debops.mcli`
@@ -379,6 +381,7 @@ Web services
 - :ref:`debops.apache`
 - :ref:`debops.fcgiwrap`
 - :ref:`debops.gunicorn`
+- :ref:`debops.garage`
 - :ref:`debops.minio`
 - :ref:`debops.nginx`
 - :ref:`debops.nodejs`
