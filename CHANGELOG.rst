@@ -37,6 +37,15 @@ New DebOps roles
   for PXE network booting of Debian and Ubuntu installers, enabling easy
   installation of new hosts and virtual machines over the network.
 
+- The :ref:`debops.garage` role installs the `Garage`__ S3-compatible
+  object store from the official static musl binary. A single-node
+  inventory produces a working S3 endpoint in one play via the daemon's
+  ``--single-node`` bootstrap, with TLS terminated on
+  :ref:`debops.nginx`. Binary upgrades are gated so that a minor
+  rolling update cannot silently become a major protocol change.
+
+  .. __: https://garagehq.deuxfleurs.fr/
+
 General
 '''''''
 
