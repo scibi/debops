@@ -1,0 +1,48 @@
+{# Copyright (C) 2026 Patryk Ściborek <patryk@sciborek.com>
+ # Copyright (C) 2026 DebOps <https://debops.org/>
+ # SPDX-License-Identifier: GPL-3.0-only
+ #}
+{% set garage__tpl_ferm = [] %}
+{% set _ = garage__tpl_ferm.append({
+     'type': 'accept',
+     'dport': [garage__rpc_port | string],
+     'saddr': garage__rpc_allow,
+     'accept_any': False,
+     'weight': '50',
+     'by_role': 'debops.garage',
+     'name': 'garage-rpc',
+     'rule_state': garage__deploy_state
+}) %}
+{% set garage__tpl_s3_direct = (not (garage__nginx_enabled | bool)) or (garage__s3_allow | length > 0) %}
+{% set _ = garage__tpl_ferm.append({
+     'type': 'accept',
+     'dport': [garage__s3_port | string],
+     'saddr': garage__s3_allow,
+     'accept_any': (not (garage__nginx_enabled | bool)),
+     'weight': '50',
+     'by_role': 'debops.garage',
+     'name': 'garage-s3',
+     'rule_state': ('present' if (garage__deploy_state == 'present' and garage__tpl_s3_direct) else 'absent')
+}) %}
+{% set garage__tpl_web_direct = (not (garage__nginx_enabled | bool)) or (garage__web_allow | length > 0) %}
+{% set _ = garage__tpl_ferm.append({
+     'type': 'accept',
+     'dport': [garage__web_port | string],
+     'saddr': garage__web_allow,
+     'accept_any': (not (garage__nginx_enabled | bool)),
+     'weight': '50',
+     'by_role': 'debops.garage',
+     'name': 'garage-web',
+     'rule_state': ('present' if (garage__deploy_state == 'present' and garage__tpl_web_direct) else 'absent')
+}) %}
+{% set _ = garage__tpl_ferm.append({
+     'type': 'accept',
+     'dport': [garage__admin_port | string],
+     'saddr': ['127.0.0.1', '::1'],
+     'accept_any': False,
+     'weight': '50',
+     'by_role': 'debops.garage',
+     'name': 'garage-admin',
+     'rule_state': garage__deploy_state
+}) %}
+{{ garage__tpl_ferm | to_yaml }}

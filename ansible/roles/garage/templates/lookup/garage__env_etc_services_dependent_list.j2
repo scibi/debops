@@ -1,0 +1,27 @@
+{# Copyright (C) 2026 Patryk Ściborek <patryk@sciborek.com>
+ # Copyright (C) 2026 DebOps <https://debops.org/>
+ # SPDX-License-Identifier: GPL-3.0-only
+ #}
+{% set garage__tpl_etc_services = [
+     {'name': 'garage-s3',
+      'port': garage__s3_port,
+      'protocol': ['tcp'],
+      'comment': 'Garage S3 API',
+      'state': garage__deploy_state},
+     {'name': 'garage-rpc',
+      'port': garage__rpc_port,
+      'protocol': ['tcp'],
+      'comment': 'Garage RPC',
+      'state': garage__deploy_state},
+     {'name': 'garage-web',
+      'port': garage__web_port,
+      'protocol': ['tcp'],
+      'comment': 'Garage S3 website',
+      'state': garage__deploy_state},
+     {'name': 'garage-admin',
+      'port': garage__admin_port,
+      'protocol': ['tcp'],
+      'comment': 'Garage admin API',
+      'state': garage__deploy_state}
+] %}
+{{ garage__tpl_etc_services | to_yaml }}
