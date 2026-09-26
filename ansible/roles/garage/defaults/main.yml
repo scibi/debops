@@ -450,7 +450,8 @@ garage__web_bind_addr: '{{ "127.0.0.1" if (garage__nginx_enabled | bool) else "0
 # .. envvar:: garage__admin_bind_addr [[[
 #
 # Listen address of the admin API. Loopback only; scrape ``/metrics`` from
-# the same host (for example with vmagent or prometheus_exporter).
+# the same host (for example with :ref:`debops.vmagent` or
+# :ref:`debops.prometheus_exporter`).
 garage__admin_bind_addr: '127.0.0.1:{{ garage__admin_port }}'
 
                                                                    # ]]]

@@ -38,7 +38,7 @@ and verifies a SHA256 checksum shipped in
 :envvar:`garage__binary_sha256_map`. Upstream does not publish
 checksums, so the map is computed when the pinned version is bumped.
 
-The same waterfall used by the vmagent role is available here: an
+The same waterfall used by the :ref:`debops.vmagent` role is available here: an
 internal HTTP mirror, a copy from the Ansible Controller, a path already
 on the remote host, or :envvar:`garage__skip_install` when the binary is
 baked into the image.
@@ -131,8 +131,8 @@ Dependent role usage
 - :ref:`debops.etc_services` registers the four Garage TCP ports.
 
 The admin API exposes ``/health`` and ``/metrics`` on
-``127.0.0.1:3903``. Scrape them from the same host with vmagent or
-prometheus_exporter.
+``127.0.0.1:3903``. Scrape them from the same host with
+:ref:`debops.vmagent` or :ref:`debops.prometheus_exporter`.
 
 
 Example playbook
