@@ -861,7 +861,7 @@ zabbix_agent__cgroup_metrics__user_parameters: '{{ [{"key": "ct.cpu.util", "comm
 # well together with :envvar:`zabbix_agent__tls_mode` set to ``cert``). This
 # requires network access from :envvar:`zabbix_agent__api_delegate_to` to the
 # Zabbix API, and an existing API token, usually bootstrapped by the
-# ``debops.zabbix_server`` role and stored in the DebOps ``secret/``
+# :ref:`debops.zabbix_server` role and stored in the DebOps ``secret/``
 # directory.
 
 # .. envvar:: zabbix_agent__api_register [[[
