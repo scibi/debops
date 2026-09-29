@@ -1,0 +1,16 @@
+{# Copyright (C) 2026 Patryk Ściborek <patryk@sciborek.com>
+ # Copyright (C) 2026 DebOps <https://debops.org/>
+ # SPDX-License-Identifier: GPL-3.0-only
+ #}
+{% set garage__tpl_upstreams = [] %}
+{% set _ = garage__tpl_upstreams.append({
+     'name': 'garage-s3',
+     'server': '127.0.0.1:' ~ (garage__s3_port | string),
+     'state': ('present' if (garage__deploy_state == 'present' and (garage__nginx_enabled | bool)) else 'absent')
+}) %}
+{% set _ = garage__tpl_upstreams.append({
+     'name': 'garage-web',
+     'server': '127.0.0.1:' ~ (garage__web_port | string),
+     'state': ('present' if (garage__deploy_state == 'present' and (garage__nginx_enabled | bool) and (garage__nginx_web_enabled | bool)) else 'absent')
+}) %}
+{{ garage__tpl_upstreams | to_yaml }}
