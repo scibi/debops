@@ -13,6 +13,7 @@ debops.garage
    man_synopsis
    man_description
    getting-started
+   defaults/main
    defaults-detailed
    guide-upgrades
 
