@@ -1,0 +1,251 @@
+---
+# Copyright (C) 2026 Patryk Ściborek <patryk@sciborek.com>
+# Copyright (C) 2026 DebOps <https://debops.org/>
+# SPDX-License-Identifier: GPL-3.0-only
+
+# Install or upgrade the garage binary using a waterfall of sources:
+#
+#   1. garage__skip_install                 -> noop (handled by caller)
+#   2. already-installed correct version    -> noop (this file: short-circuit)
+#   3. garage__local_binary_path            -> use binary already on host
+#   4. garage__controller_binary_path       -> copy binary from Controller
+#   5. garage__release_url (default URL)    -> get_url from upstream
+#
+# All sources end in identical SHA256 verification. Version changes go
+# through the upgrade gate documented in docs/ansible/roles/garage/guide-upgrades.rst.
+
+- name: Detect currently installed garage binary
+  ansible.builtin.stat:
+    path: '{{ garage__bin_path }}'
+  register: garage__register_bin_stat
+
+- name: Read currently installed garage version
+  ansible.builtin.command:
+    cmd: '{{ garage__bin_path }} --version'
+  register: garage__register_bin_version
+  changed_when: False
+  failed_when: False
+  check_mode: False
+  when: garage__register_bin_stat.stat.exists | bool
+
+- name: Set installed-version fact
+  ansible.builtin.set_fact:
+    garage__current_version: '{{ garage__register_bin_version.stdout
+                                 | d("")
+                                 | regex_search("[0-9]+\\.[0-9]+\\.[0-9]+")
+                                 | d("", true) }}'
+
+- name: Classify current and target version series
+  ansible.builtin.set_fact:
+    garage__current_series: '{{
+      (garage__current_version.split(".")[0]
+       if ((garage__current_version.split(".")[0] | int) >= 1)
+       else (garage__current_version.split(".")[0] ~ "."
+             ~ garage__current_version.split(".")[1] | d("0")))
+      if (garage__current_version | length > 0)
+      else ""
+    }}'
+    garage__target_series: '{{
+      garage__version.split(".")[0]
+      if ((garage__version.split(".")[0] | int) >= 1)
+      else (garage__version.split(".")[0] ~ "."
+            ~ garage__version.split(".")[1] | d("0"))
+    }}'
+
+- name: Decide whether a binary change is needed
+  ansible.builtin.set_fact:
+    garage__install_needed: '{{ garage__current_version != garage__version }}'
+    garage__upgrade_needed: '{{ (garage__current_version | length > 0)
+                                and (garage__current_version != garage__version) }}'
+
+- name: Assert garage__upgrade has a recognized value
+  ansible.builtin.assert:
+    that:
+      - garage__upgrade in ['none', 'minor', 'major']
+    quiet: True
+    fail_msg: >-
+      garage__upgrade must be one of 'none', 'minor', 'major'
+      (got '{{ garage__upgrade }}').
+
+- name: Refuse unsupported downgrade
+  ansible.builtin.assert:
+    that:
+      - not (garage__version is version(garage__current_version, "<"))
+    quiet: True
+    fail_msg: >-
+      Downgrade of garage from {{ garage__current_version }} to
+      {{ garage__version }} is not supported.
+  when: garage__upgrade_needed | bool
+
+- name: Refuse binary change when upgrades are disabled
+  ansible.builtin.assert:
+    that:
+      - garage__upgrade != 'none'
+    quiet: True
+    fail_msg: >-
+      Installed garage {{ garage__current_version }} differs from
+      garage__version {{ garage__version }}, but garage__upgrade is
+      'none'. Set garage__upgrade to 'minor' or 'major' after reading
+      the upgrade guide.
+  when: garage__upgrade_needed | bool
+
+- name: Refuse a major upgrade when only minor upgrades are allowed
+  ansible.builtin.assert:
+    that:
+      - garage__current_series == garage__target_series
+    quiet: True
+    fail_msg: >-
+      Upgrading garage from series {{ garage__current_series }}
+      ({{ garage__current_version }}) to series {{ garage__target_series }}
+      ({{ garage__version }}) is a major upgrade. Set
+      garage__upgrade: 'major' only after reading the upstream changelog
+      and the role upgrade guide.
+  when:
+    - garage__upgrade_needed | bool
+    - garage__upgrade == 'minor'
+
+- name: Decide whether two series are adjacent
+  ansible.builtin.set_fact:
+    garage__upgrade_adjacent: '{{ (garage__current_series == garage__target_series) or (garage__current_series is match("^[0-9]+$") and garage__target_series is match("^[0-9]+$") and ((garage__target_series | int) == ((garage__current_series | int) + 1))) or (garage__current_series is match("^0\\.") and garage__target_series is match("^0\\.") and ((garage__target_series.split(".")[1] | int) == ((garage__current_series.split(".")[1] | int) + 1))) or (garage__current_series is match("^0\\.") and garage__target_series == "1") }}'
+  when: garage__upgrade_needed | bool
+
+- name: Refuse a major upgrade that skips a series
+  ansible.builtin.assert:
+    that:
+      - garage__upgrade_adjacent | bool
+    quiet: True
+    fail_msg: >-
+      garage refuses to skip a major series
+      ({{ garage__current_series }} -> {{ garage__target_series }}).
+      Upgrade through each adjacent series and set garage__upgrade
+      to 'major' for every hop.
+  when:
+    - garage__upgrade_needed | bool
+    - garage__current_series != garage__target_series
+
+- name: Inspect garage.service before an upgrade
+  ansible.builtin.command:
+    argv:
+      - 'systemctl'
+      - 'is-active'
+      - 'garage.service'
+  register: garage__register_service_active
+  changed_when: False
+  failed_when: False
+  check_mode: False
+  when: garage__upgrade_needed | bool
+
+- name: Repair garage tables before an upgrade
+  ansible.builtin.command:
+    argv:
+      - '{{ garage__bin_path }}'
+      - 'repair'
+      - '--all-nodes'
+      - '--yes'
+      - 'tables'
+  changed_when: True
+  run_once: True
+  when:
+    - garage__upgrade_needed | bool
+    - garage__upgrade_repair_tables | bool
+    - (garage__register_service_active.stdout | d('')) == 'active'
+
+- name: Snapshot garage metadata before an upgrade
+  ansible.builtin.command:
+    argv:
+      - '{{ garage__bin_path }}'
+      - 'meta'
+      - 'snapshot'
+  changed_when: True
+  when:
+    - garage__upgrade_needed | bool
+    - garage__upgrade_snapshot | bool
+    - (garage__register_service_active.stdout | d('')) == 'active'
+
+- name: Stop garage.service before replacing the binary
+  ansible.builtin.systemd:
+    name: 'garage.service'
+    state: 'stopped'
+  register: garage__register_stop
+  failed_when:
+    - garage__register_stop is failed
+    - "'Could not find the requested service' not in (garage__register_stop.msg | d(''))"
+    - (garage__register_stop.status.LoadState | d('')) != 'not-found'
+  when: garage__upgrade_needed | bool
+
+- name: Determine binary source path on the remote host
+  ansible.builtin.set_fact:
+    garage__binary_remote_path: '{{
+      garage__local_binary_path
+      if (garage__local_binary_path | length > 0)
+      else (garage__cache_dir + "/" + garage__release_binary_name)
+    }}'
+  when: garage__install_needed | bool
+
+- name: Stage release binary from Ansible Controller
+  ansible.builtin.copy:
+    src: '{{ garage__controller_binary_path }}'
+    dest: '{{ garage__binary_remote_path }}'
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  when:
+    - garage__install_needed | bool
+    - garage__local_binary_path | length == 0
+    - garage__controller_binary_path | length > 0
+
+- name: Download release binary from garage__release_url
+  ansible.builtin.get_url:
+    url: '{{ garage__release_url }}'
+    dest: '{{ garage__binary_remote_path }}'
+    checksum: 'sha256:{{ garage__binary_sha256 }}'
+    validate_certs: '{{ garage__release_url_validate_certs | bool }}'
+    headers: '{{ garage__release_url_headers }}'
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+    force: False
+  environment:
+    http_proxy: '{{ garage__http_proxy }}'
+    https_proxy: '{{ garage__https_proxy }}'
+    HTTP_PROXY: '{{ garage__http_proxy }}'
+    HTTPS_PROXY: '{{ garage__https_proxy }}'
+    no_proxy: '{{ garage__no_proxy }}'
+    NO_PROXY: '{{ garage__no_proxy }}'
+  when:
+    - garage__install_needed | bool
+    - garage__local_binary_path | length == 0
+    - garage__controller_binary_path | length == 0
+
+- name: Verify binary checksum on the remote host
+  ansible.builtin.stat:
+    path: '{{ garage__binary_remote_path }}'
+    checksum_algorithm: 'sha256'
+    get_checksum: True
+  register: garage__register_binary_stat
+  when: garage__install_needed | bool
+
+- name: Assert binary checksum matches the expected SHA256
+  ansible.builtin.assert:
+    that:
+      - garage__register_binary_stat.stat.exists | bool
+      - garage__register_binary_stat.stat.checksum == garage__binary_sha256
+    quiet: True
+    fail_msg: >-
+      SHA256 of {{ garage__binary_remote_path }} does not match the
+      expected value for garage {{ garage__version }}
+      ({{ garage__arch }}). Got
+      '{{ garage__register_binary_stat.stat.checksum | d("missing") }}',
+      expected '{{ garage__binary_sha256 }}'.
+  when: garage__install_needed | bool
+
+- name: Install garage binary to its final location
+  ansible.builtin.copy:
+    src: '{{ garage__binary_remote_path }}'
+    dest: '{{ garage__bin_path }}'
+    remote_src: True
+    owner: 'root'
+    group: 'root'
+    mode: '0755'
+  register: garage__register_binary
+  when: garage__install_needed | bool
