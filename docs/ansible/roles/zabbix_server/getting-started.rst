@@ -51,6 +51,12 @@ neither the stock default password, the ``secret/``-generated password, nor
 an existing token work, the role fails with an explicit message instead of
 silently resetting the account.
 
+When the token file in ``secret/`` is missing, the role looks up the
+existing :envvar:`zabbix_server__api_token_name` token of the ``Admin``
+account and generates a new string for it. If that token is disabled or
+expired, the role stops instead; enable it and clear its expiry date in
+the frontend, or delete it so that the role creates a new one.
+
 The database schema import and the API bootstrap/management steps can be
 disabled independently with :envvar:`zabbix_server__deploy_state` set to
 ``absent`` (removes everything) or :envvar:`zabbix_server__api_enabled` set

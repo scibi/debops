@@ -282,7 +282,7 @@
       jsonrpc: '2.0'
       method: 'token.get'
       params:
-        output: [ 'tokenid', 'name' ]
+        output: [ 'tokenid', 'name', 'status', 'expires_at' ]
         userids:
           - '{{ zabbix_server__register_api_admin_userid.json.result[0].userid }}'
         filter:
@@ -298,6 +298,25 @@
     or zabbix_server__register_api_token_lookup.json.result is not defined
   no_log: '{{ debops__no_log | d(True) }}'
   when: zabbix_server__register_api_token_missing | bool
+
+# token.generate only replaces the token string; a disabled or expired
+# token stays unusable. Do not re-enable a token that an operator may have
+# disabled on purpose.
+- name: Fail when the existing bootstrap API token is disabled or expired
+  ansible.builtin.fail:
+    msg: >-
+      The Zabbix API token '{{ zabbix_server__api_token_name }}' of the
+      '{{ zabbix_server__api_admin_user }}' user is disabled or expired, and
+      its value is missing from secret/{{ zabbix_server__api_token_path }}.
+      Enable it and clear its expiry date in the Zabbix frontend, or delete
+      it to let the role create a new one, then run the role again.
+  when:
+    - zabbix_server__register_api_token_missing | bool
+    - zabbix_server__register_api_token_lookup.json.result | d([]) | length > 0
+    - ((zabbix_server__register_api_token_lookup.json.result[0].status | string) != '0')
+      or ((zabbix_server__register_api_token_lookup.json.result[0].expires_at | int) != 0
+          and (zabbix_server__register_api_token_lookup.json.result[0].expires_at | int)
+              <= (now(utc=True).timestamp() | int))
 
 - name: Create Zabbix API token for the Admin account
   ansible.builtin.uri:
