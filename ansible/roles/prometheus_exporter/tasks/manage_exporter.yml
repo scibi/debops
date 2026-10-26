@@ -14,11 +14,16 @@
       - (exporter.state | d('present') == 'absent')
         or (exporter.listen_address is defined)
         or (exporter.name in prometheus_exporter__known_ports)
+      - (exporter.environment | d({}) | dict2items
+         | rejectattr('key', 'match', '[A-Za-z_][A-Za-z0-9_]*\\Z')
+         | list | length) == 0
     quiet: True
     fail_msg: >-
-      Each exporter needs a non-empty 'name', 'state' present/absent, and
+      Each exporter needs a non-empty 'name', 'state' present/absent,
       (for present) either 'listen_address' or a 'name' present in
-      prometheus_exporter__known_ports.
+      prometheus_exporter__known_ports, and 'environment' keys that are
+      valid variable names (letters, digits and '_', not starting with a
+      digit).
 
 - name: Resolve settings for exporter {{ exporter.name }}
   ansible.builtin.set_fact:

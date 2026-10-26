@@ -35,7 +35,9 @@ Then the exporter:
        environment:
          DATA_SOURCE_NAME: 'host=127.0.0.1 port=5432 user=prometheus_exporter password={{ lookup("password", secret + "/postgresql/prometheus_exporter_password chars=ascii_letters,digits length=32") }} dbname=postgres sslmode=disable'
 
-Redis example (password via environment):
+Redis example (password via environment). On a host managed by
+:ref:`debops.redis_server`, use the password that role publishes in its
+local facts, so that both always match:
 
 .. code-block:: yaml
 
@@ -43,4 +45,4 @@ Redis example (password via environment):
      - name: 'redis'
        args: [ '--redis.addr=redis://127.0.0.1:6379' ]
        environment:
-         REDIS_PASSWORD: '{{ lookup("password", secret + "/redis/exporter_password") }}'
+         REDIS_PASSWORD: '{{ ansible_local.redis_server.password }}'
