@@ -9,7 +9,7 @@ This role installs and configures Prometheus exporters packaged in the
 Debian / Ubuntu repositories (the ``prometheus-*-exporter`` family, e.g.
 ``prometheus-node-exporter``, ``prometheus-postgres-exporter``). Each
 exporter is configured through a dedicated systemd drop-in file that resets
-and rewrites ``ExecStart=`` (and, when needed, ``Environment=``), which makes
+and rewrites ``ExecStart=`` (and, when needed, ``EnvironmentFile=``), which makes
 the role independent of per-package and per-release differences in the
 shipped ``/etc/default/`` files. Exporters bind to the loopback interface by
 default and are intended to be scraped by a local agent such as

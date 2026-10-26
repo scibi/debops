@@ -8,7 +8,8 @@ Guide: database exporters (postgres, redis)
 ===========================================
 
 Database exporters need credentials. Keep them out of world-readable files
-by passing them via ``environment`` (rendered into the ``0600`` drop-in).
+by passing them via ``environment`` (rendered into a ``0600`` environment
+file loaded by the systemd drop-in).
 
 PostgreSQL example. Create a least-privilege monitoring role with the
 ``pg_monitor`` built-in role (via :ref:`debops.postgresql`):

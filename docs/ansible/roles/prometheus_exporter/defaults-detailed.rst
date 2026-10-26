@@ -70,9 +70,12 @@ Each entry is a dict with the following keys:
   Optional list of extra command-line flags appended verbatim.
 
 ``environment``
-  Optional dict of environment variables placed in the drop-in (e.g.
-  ``DATA_SOURCE_NAME``). When non-empty, the drop-in is written with mode
-  ``0600`` and ``no_log``.
+  Optional dict of environment variables for the exporter (e.g.
+  ``DATA_SOURCE_NAME``). When non-empty, the variables are written with
+  ``no_log`` to :file:`<config_dir>/<name>.env` (mode ``0600``, owned by
+  ``root``), and the drop-in loads that file with ``EnvironmentFile=``.
+  Unlike ``Environment=`` in the drop-in, the values are not exposed to
+  other local users through the systemd D-Bus interface.
 
 ``config`` / ``config_path`` / ``config_flag`` / ``config_mode`` / ``config_group`` / ``config_no_log``
   Optional. When ``config`` (a dict) is set, it is rendered as YAML to
@@ -81,7 +84,7 @@ Each entry is a dict with the following keys:
   the command line. Files are owned by ``root`` and
   ``config_group`` (default ``root``). Debian exporter units typically
   run as an unprivileged user, so the default file mode is ``0644``.
-  Prefer ``environment`` for secrets (the drop-in is ``0600``). To keep
+  Prefer ``environment`` for secrets (the ``.env`` file is ``0600``). To keep
   a YAML config readable only by the exporter, set
   ``config_mode: '0640'``, ``config_group`` to that unit's group
   (commonly ``prometheus``), and ``config_no_log: true``. ``0600``

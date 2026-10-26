@@ -10,17 +10,19 @@
 {% for a in exporter.args | d([]) %}
 {%   set _ = pe_args.append(a) %}
 {% endfor %}
+{# systemd expands '%' specifiers and '$' variables in ExecStart= #}
+{% set pe_exec = [] %}
+{% for a in [prometheus_exporter__fact_bin] + pe_args %}
+{%   set _ = pe_exec.append(a | string | replace('%', '%%') | replace('$', '$$')) %}
+{% endfor %}
 # {{ ansible_managed }}
 [Service]
 EnvironmentFile=
-{% if exporter.environment | d({}) | length > 0 %}
-Environment=
-{% for key, value in exporter.environment | dictsort %}
-Environment={{ (key ~ '=' ~ (value | string)) | to_json }}
-{% endfor %}
+{% if prometheus_exporter__fact_secret | bool %}
+EnvironmentFile={{ prometheus_exporter__fact_env_path }}
 {% endif %}
 ExecStart=
-ExecStart={{ ([prometheus_exporter__fact_bin] + pe_args) | map('to_json') | join(' ') }}
+ExecStart={{ pe_exec | map('to_json') | join(' ') }}
 {% for line in exporter.systemd_overrides | d([]) %}
 {{ line }}
 {% endfor %}
