@@ -251,9 +251,12 @@
   when: zabbix_server__users | length > 0
 
 # Custom templates [[[1
-# configuration.import returns true on every successful call, including a
-# re-import of the same document. Compare a checksum of the source we send
-# with the checksum stored after the previous successful import.
+# Templates are imported on every run, so the import also restores
+# templates changed or removed in the frontend. configuration.import
+# returns true on every successful call, including a re-import of the same
+# document, so the task reports a change only when the checksum of the
+# source we send differs from the one stored after the previous successful
+# import.
 - name: Checksum custom Zabbix template sources
   ansible.builtin.set_fact:
     zabbix_server__template_checksums: >-
@@ -316,12 +319,19 @@
 
 - name: Collect Zabbix template import errors
   ansible.builtin.set_fact:
+    # A request that fails before the API answers (connection refused,
+    # TLS or HTTP errors) has no 'json' key; report its 'msg' instead.
     zabbix_server__template_import_errors: |-
-      {{ (zabbix_server__register_api_template_result.results | d([]))
-         | map(attribute='json')
-         | selectattr('error', 'defined')
-         | map(attribute='error.data')
-         | list }}
+      {{ ((zabbix_server__register_api_template_result.results | d([]))
+          | selectattr('json', 'undefined')
+          | map(attribute='msg', default='No JSON response from the Zabbix API')
+          | list)
+         + ((zabbix_server__register_api_template_result.results | d([]))
+            | selectattr('json', 'defined')
+            | map(attribute='json')
+            | selectattr('error', 'defined')
+            | map(attribute='error.data')
+            | list) }}
   no_log: '{{ debops__no_log | d(True) }}'
   when: zabbix_server__templates | length > 0
 
