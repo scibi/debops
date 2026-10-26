@@ -220,7 +220,9 @@
   register: zabbix_server__register_api_password_change
   delegate_to: '{{ zabbix_server__api_delegate_to }}'
   become: False
-  failed_when: zabbix_server__register_api_password_change.json.error is defined
+  failed_when: >-
+    (zabbix_server__register_api_password_change.status | d(0)) != 200
+    or zabbix_server__register_api_password_change.json.result is not defined
   no_log: '{{ debops__no_log | d(True) }}'
   when: zabbix_server__register_api_token_missing | bool and
         zabbix_server__register_api_fresh_install | bool
@@ -291,7 +293,9 @@
   register: zabbix_server__register_api_token_lookup
   delegate_to: '{{ zabbix_server__api_delegate_to }}'
   become: False
-  failed_when: zabbix_server__register_api_token_lookup.json.error is defined
+  failed_when: >-
+    (zabbix_server__register_api_token_lookup.status | d(0)) != 200
+    or zabbix_server__register_api_token_lookup.json.result is not defined
   no_log: '{{ debops__no_log | d(True) }}'
   when: zabbix_server__register_api_token_missing | bool
 
@@ -314,7 +318,9 @@
   register: zabbix_server__register_api_token_create
   delegate_to: '{{ zabbix_server__api_delegate_to }}'
   become: False
-  failed_when: zabbix_server__register_api_token_create.json.error is defined
+  failed_when: >-
+    (zabbix_server__register_api_token_create.status | d(0)) != 200
+    or zabbix_server__register_api_token_create.json.result is not defined
   no_log: '{{ debops__no_log | d(True) }}'
   when: zabbix_server__register_api_token_missing | bool and
         (zabbix_server__register_api_token_lookup.json.result | d([]) | length == 0)
@@ -346,7 +352,9 @@
   register: zabbix_server__register_api_token_generate
   delegate_to: '{{ zabbix_server__api_delegate_to }}'
   become: False
-  failed_when: zabbix_server__register_api_token_generate.json.error is defined
+  failed_when: >-
+    (zabbix_server__register_api_token_generate.status | d(0)) != 200
+    or zabbix_server__register_api_token_generate.json.result is not defined
   no_log: '{{ debops__no_log | d(True) }}'
   when: zabbix_server__register_api_token_missing | bool
 

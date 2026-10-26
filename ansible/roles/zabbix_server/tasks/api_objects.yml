@@ -9,6 +9,10 @@
 # raw API method parameters (see the Zabbix API reference), matched by its
 # natural key ('name', or 'username' for users) to decide between the
 # 'create' and 'update' API methods.
+#
+# A request counts as successful only with HTTP status 200 and a JSON-RPC
+# 'result'. This also catches connection errors and proxy or server error
+# pages, which have no 'result' even when they carry a JSON body.
 
 # Media types [[[1
 - name: Look up existing Zabbix media types
@@ -32,7 +36,9 @@
   delegate_to: '{{ zabbix_server__api_delegate_to }}'
   become: False
   register: zabbix_server__register_api_media_types
-  failed_when: zabbix_server__register_api_media_types.json.error is defined
+  failed_when: >-
+    (zabbix_server__register_api_media_types.status | d(0)) != 200
+    or zabbix_server__register_api_media_types.json.result is not defined
   no_log: '{{ debops__no_log | d(True) }}'
   when: zabbix_server__media_types | length > 0
 
@@ -66,7 +72,9 @@
   delegate_to: '{{ zabbix_server__api_delegate_to }}'
   become: False
   register: zabbix_server__register_api_media_type_result
-  failed_when: zabbix_server__register_api_media_type_result.json.error is defined
+  failed_when: >-
+    (zabbix_server__register_api_media_type_result.status | d(0)) != 200
+    or zabbix_server__register_api_media_type_result.json.result is not defined
   no_log: '{{ debops__no_log | d(True) }}'
   when: zabbix_server__media_types | length > 0
 
@@ -92,7 +100,9 @@
   delegate_to: '{{ zabbix_server__api_delegate_to }}'
   become: False
   register: zabbix_server__register_api_actions
-  failed_when: zabbix_server__register_api_actions.json.error is defined
+  failed_when: >-
+    (zabbix_server__register_api_actions.status | d(0)) != 200
+    or zabbix_server__register_api_actions.json.result is not defined
   no_log: '{{ debops__no_log | d(True) }}'
   when: zabbix_server__actions | length > 0
 
@@ -126,7 +136,9 @@
   delegate_to: '{{ zabbix_server__api_delegate_to }}'
   become: False
   register: zabbix_server__register_api_action_result
-  failed_when: zabbix_server__register_api_action_result.json.error is defined
+  failed_when: >-
+    (zabbix_server__register_api_action_result.status | d(0)) != 200
+    or zabbix_server__register_api_action_result.json.result is not defined
   no_log: '{{ debops__no_log | d(True) }}'
   when: zabbix_server__actions | length > 0
 
@@ -152,7 +164,9 @@
   delegate_to: '{{ zabbix_server__api_delegate_to }}'
   become: False
   register: zabbix_server__register_api_user_groups
-  failed_when: zabbix_server__register_api_user_groups.json.error is defined
+  failed_when: >-
+    (zabbix_server__register_api_user_groups.status | d(0)) != 200
+    or zabbix_server__register_api_user_groups.json.result is not defined
   no_log: '{{ debops__no_log | d(True) }}'
   when: zabbix_server__user_groups | length > 0
 
@@ -186,7 +200,9 @@
   delegate_to: '{{ zabbix_server__api_delegate_to }}'
   become: False
   register: zabbix_server__register_api_user_group_result
-  failed_when: zabbix_server__register_api_user_group_result.json.error is defined
+  failed_when: >-
+    (zabbix_server__register_api_user_group_result.status | d(0)) != 200
+    or zabbix_server__register_api_user_group_result.json.result is not defined
   no_log: '{{ debops__no_log | d(True) }}'
   when: zabbix_server__user_groups | length > 0
 
@@ -212,7 +228,9 @@
   delegate_to: '{{ zabbix_server__api_delegate_to }}'
   become: False
   register: zabbix_server__register_api_users
-  failed_when: zabbix_server__register_api_users.json.error is defined
+  failed_when: >-
+    (zabbix_server__register_api_users.status | d(0)) != 200
+    or zabbix_server__register_api_users.json.result is not defined
   no_log: '{{ debops__no_log | d(True) }}'
   when: zabbix_server__users | length > 0
 
@@ -246,7 +264,9 @@
   delegate_to: '{{ zabbix_server__api_delegate_to }}'
   become: False
   register: zabbix_server__register_api_user_result
-  failed_when: zabbix_server__register_api_user_result.json.error is defined
+  failed_when: >-
+    (zabbix_server__register_api_user_result.status | d(0)) != 200
+    or zabbix_server__register_api_user_result.json.result is not defined
   no_log: '{{ debops__no_log | d(True) }}'
   when: zabbix_server__users | length > 0
 
@@ -319,19 +339,21 @@
 
 - name: Collect Zabbix template import errors
   ansible.builtin.set_fact:
-    # A request that fails before the API answers (connection refused,
-    # TLS or HTTP errors) has no 'json' key; report its 'msg' instead.
+    # Any result without HTTP status 200 and a JSON-RPC 'result' is an
+    # error: an API error, a connection error (no 'json' key) or an error
+    # page from a proxy or the web server (a 'json' key without 'result').
     zabbix_server__template_import_errors: |-
-      {{ ((zabbix_server__register_api_template_result.results | d([]))
-          | selectattr('json', 'undefined')
-          | map(attribute='msg', default='No JSON response from the Zabbix API')
-          | list)
-         + ((zabbix_server__register_api_template_result.results | d([]))
-            | selectattr('json', 'defined')
-            | map(attribute='json')
-            | selectattr('error', 'defined')
-            | map(attribute='error.data')
-            | list) }}
+      {% set errors = [] %}
+      {% for result in (zabbix_server__register_api_template_result.results | d([])) %}
+      {%   if result.json.error is defined %}
+      {%     set _ = errors.append(result.item.name ~ ': '
+                                   ~ (result.json.error.data | d(result.json.error.message))) %}
+      {%   elif (result.status | d(0)) != 200 or result.json.result is not defined %}
+      {%     set _ = errors.append(result.item.name ~ ': '
+                                   ~ (result.msg | d('no Zabbix API result in the response'))) %}
+      {%   endif %}
+      {% endfor %}
+      {{ errors }}
   no_log: '{{ debops__no_log | d(True) }}'
   when: zabbix_server__templates | length > 0
 

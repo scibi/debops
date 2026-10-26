@@ -31,7 +31,9 @@
   delegate_to: '{{ zabbix_server__api_delegate_to }}'
   become: False
   register: zabbix_server__register_override_template
-  failed_when: zabbix_server__register_override_template.json.error is defined
+  failed_when: >-
+    (zabbix_server__register_override_template.status | d(0)) != 200
+    or zabbix_server__register_override_template.json.result is not defined
   no_log: '{{ debops__no_log | d(True) }}'
 
 - name: Look up hosts linked to the template
@@ -55,7 +57,9 @@
   delegate_to: '{{ zabbix_server__api_delegate_to }}'
   become: False
   register: zabbix_server__register_override_hosts
-  failed_when: zabbix_server__register_override_hosts.json.error is defined
+  failed_when: >-
+    (zabbix_server__register_override_hosts.status | d(0)) != 200
+    or zabbix_server__register_override_hosts.json.result is not defined
   no_log: '{{ debops__no_log | d(True) }}'
   when: (zabbix_server__register_override_template.json.result | d([])) | length > 0
 
@@ -80,7 +84,9 @@
   delegate_to: '{{ zabbix_server__api_delegate_to }}'
   become: False
   register: zabbix_server__register_override_items
-  failed_when: zabbix_server__register_override_items.json.error is defined
+  failed_when: >-
+    (zabbix_server__register_override_items.status | d(0)) != 200
+    or zabbix_server__register_override_items.json.result is not defined
   no_log: '{{ debops__no_log | d(True) }}'
   when: (zabbix_server__register_override_hosts.json.result | d([])) | length > 0
 
@@ -118,6 +124,8 @@
   become: False
   register: zabbix_server__register_override_disable
   no_log: '{{ debops__no_log | d(True) }}'
-  failed_when: zabbix_server__register_override_disable.json.error is defined
+  failed_when: >-
+    (zabbix_server__register_override_disable.status | d(0)) != 200
+    or zabbix_server__register_override_disable.json.result is not defined
   changed_when: (zabbix_server__fact_override_itemids | d([])) | length > 0
   when: (zabbix_server__fact_override_itemids | d([])) | length > 0
