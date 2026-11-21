@@ -51,6 +51,20 @@ New DebOps roles
   defined in the Ansible inventory, using credentials stored by the
   :ref:`debops.secret` role.
 
+- The :ref:`debops.prometheus_exporter` role can install and configure
+  Prometheus exporters from Debian packages (the ``prometheus-*-exporter``
+  family). Each exporter is managed via a systemd drop-in that rewrites
+  ``ExecStart``/``Environment``, so the role works uniformly across
+  exporters and Debian releases. Exporters bind to loopback and are meant to
+  be scraped by ``debops.vmagent``.
+
+- The :ref:`debops.zabbix_server` role installs and configures Zabbix
+  Server, its PostgreSQL database schema and PHP web frontend, and manages
+  global Zabbix objects (media types, actions, users, custom templates) via
+  the JSON-RPC API. It is designed to bootstrap a complete installation
+  from an empty database without any manual steps through the web
+  interface, and complements the :ref:`debops.zabbix_agent` role.
+
 General
 '''''''
 
@@ -359,20 +373,6 @@ New DebOps roles
 - The :ref:`debops.netboot_assistant` role allows management of netinst images
   for PXE network booting of Debian and Ubuntu installers, enabling easy
   installation of new hosts and virtual machines over the network.
-
-- The :ref:`debops.prometheus_exporter` role can install and configure
-  Prometheus exporters from Debian packages (the ``prometheus-*-exporter``
-  family). Each exporter is managed via a systemd drop-in that rewrites
-  ``ExecStart``/``Environment``, so the role works uniformly across
-  exporters and Debian releases. Exporters bind to loopback and are meant to
-  be scraped by ``debops.vmagent``.
-
-- The :ref:`debops.zabbix_server` role installs and configures Zabbix
-  Server, its PostgreSQL database schema and PHP web frontend, and manages
-  global Zabbix objects (media types, actions, users, custom templates) via
-  the JSON-RPC API. It is designed to bootstrap a complete installation
-  from an empty database without any manual steps through the web
-  interface, and complements the :ref:`debops.zabbix_agent` role.
 
 General
 '''''''
