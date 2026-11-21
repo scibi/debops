@@ -44,6 +44,13 @@ New DebOps roles
   by other roles, and the bearer tokens used for remote write are stored by
   the :ref:`debops.secret` role.
 
+- The :ref:`debops.cloudflared` role can be used to install the Cloudflare
+  Tunnel client from the upstream APT repository and manage one or more
+  tunnels through a systemd template unit. Tunnels can be managed remotely
+  from the Cloudflare dashboard with a token, or locally with ingress rules
+  defined in the Ansible inventory, using credentials stored by the
+  :ref:`debops.secret` role.
+
 General
 '''''''
 
